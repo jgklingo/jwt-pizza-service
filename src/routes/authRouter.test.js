@@ -1,11 +1,12 @@
 const request = require('supertest');
 const app = require('../service');
+const { randomName } = require('../testUtils');
 
 const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
 let testUserAuthToken;
 
 beforeAll(async () => {
-  testUser.email = Math.random().toString(36).substring(2, 12) + '@test.com';
+  randomName() + '@test.com';
   const registerRes = await request(app).post('/api/auth').send(testUser);
   testUserAuthToken = registerRes.body.token;
   expect(testUserAuthToken).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
@@ -20,3 +21,11 @@ test('login', async () => {
   expect(loginRes.body.user).toMatchObject(user);
   expect(password).toBeTruthy();
 });
+
+test('register', async () => {
+  const newUser = { name: randomName(), email: randomName() + '@test.com', password: 'a' };
+  const registerRes = await request(app).post('/api/auth').send(newUser);
+  expect(registerRes.status).toBe(200);
+  expect(registerRes.body.token).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
+  expect(registerRes.body.user.name).toBe(newUser.name);
+})
