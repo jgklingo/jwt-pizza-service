@@ -35,3 +35,9 @@ test('update user', async () => {
   expect(updateRes.status).toBe(200);
   expect(updateRes.body.email).toBe('changed@test.com');
 })
+
+test('logout', async () => {
+  const logoutRes = await request(app).delete('/api/auth').set('Authorization', 'Bearer ' + testUserAuthToken);
+  expect(logoutRes.status).toBe(200);
+  expect(logoutRes.body.message).toBe('logout successful');
+})
