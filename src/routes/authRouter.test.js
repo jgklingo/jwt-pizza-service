@@ -6,9 +6,9 @@ const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
 let testUserAuthToken;
 
 beforeAll(async () => {
-  randomName() + '@test.com';
   const registerRes = await request(app).post('/api/auth').send(testUser);
   testUserAuthToken = registerRes.body.token;
+  testUserId = registerRes.body.user.id;
   expect(testUserAuthToken).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
 });
 
@@ -28,4 +28,10 @@ test('register', async () => {
   expect(registerRes.status).toBe(200);
   expect(registerRes.body.token).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
   expect(registerRes.body.user.name).toBe(newUser.name);
+})
+
+test('update user', async () => {
+  const updateRes = await request(app).put('/api/auth/' + testUserId).set('Authorization', 'Bearer ' + testUserAuthToken).send({ email: 'changed@test.com', password: 'a' });
+  expect(updateRes.status).toBe(200);
+  expect(updateRes.body.email).toBe('changed@test.com');
 })
