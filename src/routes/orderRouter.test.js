@@ -7,7 +7,6 @@ let testUserAuthToken;
 let testItem;
 
 const { Role, DB } = require('../database/database.js');
-const Test = require('supertest/lib/test.js');
 
 async function createAdminUser() {
   let user = { password: 'toomanysecrets', roles: [{ role: Role.Admin }] };
@@ -33,7 +32,7 @@ beforeAll(async () => {
   expect(testUserAuthToken).toMatch(/^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/);
 
   testItem = { menuId: 1, description: 'Veggie', price: 0.05 };
-  const addItemRes = await request(app).put('/api/order/menu').set('Authorization', 'Bearer ' + adminUser.token).send(testItem);
+  await request(app).put('/api/order/menu').set('Authorization', 'Bearer ' + adminUser.token).send(testItem);
 });
 
 test('order test', async () => {

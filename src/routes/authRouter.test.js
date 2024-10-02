@@ -4,6 +4,7 @@ const { randomName } = require('../testUtils');
 
 const testUser = { name: 'pizza diner', email: 'reg@test.com', password: 'a' };
 let testUserAuthToken;
+let testUserId;
 
 beforeAll(async () => {
   const registerRes = await request(app).post('/api/auth').send(testUser);

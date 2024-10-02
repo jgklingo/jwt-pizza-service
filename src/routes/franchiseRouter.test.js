@@ -3,7 +3,6 @@ const app = require('../service');
 const { randomName } = require('../testUtils');
 
 const { Role, DB } = require('../database/database.js');
-const Test = require('supertest/lib/test.js');
 
 async function createAdminUser() {
   let user = { password: 'toomanysecrets', roles: [{ role: Role.Admin }] };
