@@ -81,6 +81,7 @@ jobs:
           git add .
           git commit -m "generated"
           git push
+        # added the git pull line above to prevent conflicts in some circumstances
 
       - name: Create dist
         run: |
@@ -149,6 +150,7 @@ jobs:
           task-definition: task-definition.json
           container-name: jwt-pizza-service
           image: ${{ steps.build-image.outputs.image }}
+        # this step was erroring until I added "arn:aws:iam::438465170134:role/ecsTaskExecutionRole" to the "PassRolesInTaskDefinition" permission
       
       - name: Deploy new task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
