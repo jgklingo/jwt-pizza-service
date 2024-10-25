@@ -28,6 +28,16 @@
       "Default": "",
       "AllowedPattern": "^(?:vpc-[0-9a-f]{8,17}|)$",
       "ConstraintDescription": "VPC ID must begin with 'vpc-' and have a valid uuid"
+    },
+    "HostedZoneID": {
+      "Type": "String",
+      "Description": "Route53 hosted zone ID for the application",
+      "Default": ""
+    },
+    "ServiceURL": {
+      "Type": "String",
+      "Description": "URL where the service will be located",
+      "Default": ""
     }
   },
   "Resources": {
@@ -146,6 +156,20 @@
         "Certificates": [
           {
             "CertificateArn": { "Ref": "CertificateArn" }
+          }
+        ]
+      }
+    },
+    "DNSRecord": {
+      "Type": "AWS::Route53::RecordSet",
+      "Properties": {
+        "HostedZoneId": { "Ref": "HostedZoneID" },
+        "Name": { "Ref": "ServiceURL" },
+        "Type": "CNAME",
+        "TTL": "300",
+        "ResourceRecords": [
+          {
+            "Fn::GetAtt": ["LoadBalancer", "DNSName"]
           }
         ]
       }
