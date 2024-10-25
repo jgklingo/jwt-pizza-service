@@ -1,0 +1,88 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Nested stacks to spin up the JWT Pizza backend",
+    "Parameters": {
+        "TaskVersion": {
+            "Type": "String",
+            "Description": "JWT Pizza Service Task Definition version to initialize the ECS service with",
+            "Default": ""
+        },
+        "CertificateArn": {
+            "Type": "String",
+            "Description": "Load balancer web certificate ARN use to support HTTPS on the ALB",
+            "Default": ""
+        },
+        "SecurityGroupID": {
+            "Type": "String",
+            "Description": "ECS service and ALB Security group",
+            "Default": ""
+        },
+        "SubnetIDs": {
+            "Type": "String",
+            "Description": "A comma delimited list of VPC network subnets for the ECS service, ALB, and RDS",
+            "Default": ""
+        },
+        "VpcID": {
+            "Type": "String",
+            "Description": "The ID of the VPC for the ALB",
+            "Default": "",
+            "AllowedPattern": "^(?:vpc-[0-9a-f]{8,17}|)$",
+            "ConstraintDescription": "VPC ID must begin with 'vpc-' and have a valid uuid"
+        },
+        "HostedZoneID": {
+            "Type": "String",
+            "Description": "Route53 hosted zone ID for the application",
+            "Default": ""
+        },
+        "ServiceURL": {
+            "Type": "String",
+            "Description": "URL where the service will be located",
+            "Default": ""
+        },
+        "InstancePassword": {
+            "Type": "String",
+            "Description": "RDS instance master password"
+        },
+        "PrivateHostedZoneID": {
+            "Type": "String",
+            "Description": "Route53 private hosted zone ID for the application",
+            "Default": ""
+        },
+        "DBURL": {
+            "Type": "String",
+            "Description": "URL where the database will be located within the VPC",
+            "Default": ""
+        }
+    },
+    "Resources": {
+        "JWTPizzaDB": {
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": "https://jgklingo-cloudformation-templates.s3.us-east-1.amazonaws.com/jwt-pizza-db.json",
+                "Parameters": {
+                    "SecurityGroupID": {"Ref": "SecurityGroupID"},
+                    "SubnetIDs": {"Fn::Split": [",", {"Ref": "SubnetIDs"}]},
+                    "InstancePassword": {"Ref": "InstancePassword"},
+                    "PrivateHostedZoneID": {"Ref": "PrivateHostedZoneID"},
+                    "DBURL": {"Ref": "DBURL"}
+                }
+            }
+        },
+        "JWTPizzaService": {
+            "DependsOn": "JWTPizzaDB",
+            "Type": "AWS::CloudFormation::Stack",
+            "Properties": {
+                "TemplateURL": "https://jgklingo-cloudformation-templates.s3.us-east-1.amazonaws.com/jwt-pizza-service.json",
+                "Parameters": {
+                    "TaskVersion": {"Ref": "TaskVersion"},
+                    "CertificateArn": {"Ref": "CertificateArn"},
+                    "SecurityGroupID": {"Ref": "SecurityGroupID"},
+                    "SubnetIDs": {"Fn::Split": [",", {"Ref": "SubnetIDs"}]},
+                    "VpcID": {"Ref": "VpcID"},
+                    "HostedZoneID": {"Ref": "HostedZoneID"},
+                    "ServiceURL": {"Ref": "ServiceURL"}
+                }
+            }
+        }
+    }
+}
