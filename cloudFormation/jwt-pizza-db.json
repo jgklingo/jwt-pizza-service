@@ -33,7 +33,9 @@
             "Properties": {
                 "DBSubnetGroupName": "jwt-pizza-db-subnet-group",
                 "DBSubnetGroupDescription": "Subnet group for the jwt-pizza RDS instance",
-                "SubnetIds": {"Ref": "SubnetIDs"}
+                "SubnetIds": {
+                    "Ref": "SubnetIDs"
+                }
             }
         },
         "RDSInstance": {
@@ -42,36 +44,66 @@
                 "Engine": "mysql",
                 "DBInstanceIdentifier": "jwt-pizza-service-db",
                 "MasterUsername": "admin",
-                "MasterUserPassword": {"Ref": "InstancePassword"},
+                "MasterUserPassword": {
+                    "Ref": "InstancePassword"
+                },
                 "DBInstanceClass": "db.t4g.micro",
                 "PubliclyAccessible": "false",
-                "VPCSecurityGroups": [{"Ref": "SecurityGroupID"}],
-                "AvailabilityZone": {"Fn::Select": ["0", {"Fn::GetAZs": {"Ref": "AWS::Region"}}]},
+                "VPCSecurityGroups": [
+                    {
+                        "Ref": "SecurityGroupID"
+                    }
+                ],
+                "AvailabilityZone": {
+                    "Fn::Select": [
+                        "0",
+                        {
+                            "Fn::GetAZs": {
+                                "Ref": "AWS::Region"
+                            }
+                        }
+                    ]
+                },
                 "EnableIAMDatabaseAuthentication": "true",
                 "AllocatedStorage": "20",
                 "StorageType": "gp3",
                 "MultiAZ": "false",
                 "EngineLifecycleSupport": "open-source-rds-extended-support-disabled",
                 "StorageEncrypted": "true",
-                "DBSubnetGroupName": {"Ref": "DBSubnetGroup"}
+                "DBSubnetGroupName": {
+                    "Ref": "DBSubnetGroup"
+                }
             }
         },
         "DNSRecord": {
             "DependsOn": "RDSInstance",
             "Type": "AWS::Route53::RecordSet",
             "Properties": {
-                "HostedZoneId": {"Ref": "PrivateHostedZoneID"},
-                "Name": {"Ref": "DBURL"},
+                "HostedZoneId": {
+                    "Ref": "PrivateHostedZoneID"
+                },
+                "Name": {
+                    "Ref": "DBURL"
+                },
                 "Type": "CNAME",
                 "TTL": "300",
-                "ResourceRecords": [{"Fn::GetAtt": ["RDSInstance", "Endpoint.Address"]}]
+                "ResourceRecords": [
+                    {
+                        "Fn::GetAtt": [
+                            "RDSInstance",
+                            "Endpoint.Address"
+                        ]
+                    }
+                ]
             }
         }
     },
     "Outputs": {
         "RDSInstance": {
             "Description": "RDS instance",
-            "Value": {"Ref": "RDSInstance"}
+            "Value": {
+                "Ref": "RDSInstance"
+            }
         }
     }
 }

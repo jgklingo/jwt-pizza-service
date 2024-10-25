@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "JWT Pizza Service infrastructure",
+  "Description": "JWT Pizza Service and DB",
   "Parameters": {
     "TaskVersion": {
       "Type": "String",
@@ -19,7 +19,7 @@
     },
     "SubnetIDs": {
       "Type": "CommaDelimitedList",
-      "Description": "A comma delimited list of VPC network subnets for the ECS service and ALB",
+      "Description": "A comma delimited list of VPC network subnets for the ECS service, ALB, and RDS",
       "Default": ""
     },
     "VpcID": {
@@ -38,6 +38,20 @@
       "Type": "String",
       "Description": "URL where the service will be located",
       "Default": ""
+    },
+    "InstancePassword": {
+      "Type": "String",
+      "Description": "RDS instance master password"
+    },
+    "PrivateHostedZoneID": {
+        "Type": "String",
+        "Description": "Route53 private hosted zone ID for the application",
+        "Default": ""
+    },
+    "DBURL": {
+        "Type": "String",
+        "Description": "URL where the database will be located within the VPC",
+        "Default": ""
     }
   },
   "Resources": {
@@ -173,6 +187,75 @@
           }
         ]
       }
+    },
+    "DBSubnetGroup": {
+            "Type": "AWS::RDS::DBSubnetGroup",
+            "Properties": {
+                "DBSubnetGroupName": "jwt-pizza-db-subnet-group",
+                "DBSubnetGroupDescription": "Subnet group for the jwt-pizza RDS instance",
+                "SubnetIds": {
+                    "Ref": "SubnetIDs"
+                }
+            }
+    },
+    "RDSInstance": {
+        "Type": "AWS::RDS::DBInstance",
+        "Properties": {
+            "Engine": "mysql",
+            "DBInstanceIdentifier": "jwt-pizza-service-db",
+            "MasterUsername": "admin",
+            "MasterUserPassword": {
+                "Ref": "InstancePassword"
+            },
+            "DBInstanceClass": "db.t4g.micro",
+            "PubliclyAccessible": "false",
+            "VPCSecurityGroups": [
+                {
+                    "Ref": "SecurityGroupID"
+                }
+            ],
+            "AvailabilityZone": {
+                "Fn::Select": [
+                    "0",
+                    {
+                        "Fn::GetAZs": {
+                            "Ref": "AWS::Region"
+                        }
+                    }
+                ]
+            },
+            "EnableIAMDatabaseAuthentication": "true",
+            "AllocatedStorage": "20",
+            "StorageType": "gp3",
+            "MultiAZ": "false",
+            "EngineLifecycleSupport": "open-source-rds-extended-support-disabled",
+            "StorageEncrypted": "true",
+            "DBSubnetGroupName": {
+                "Ref": "DBSubnetGroup"
+            }
+        }
+    },
+    "DNSRecordDB": {
+        "DependsOn": "RDSInstance",
+        "Type": "AWS::Route53::RecordSet",
+        "Properties": {
+            "HostedZoneId": {
+                "Ref": "PrivateHostedZoneID"
+            },
+            "Name": {
+                "Ref": "DBURL"
+            },
+            "Type": "CNAME",
+            "TTL": "300",
+            "ResourceRecords": [
+                {
+                    "Fn::GetAtt": [
+                        "RDSInstance",
+                        "Endpoint.Address"
+                    ]
+                }
+            ]
+        }
     }
   },
   "Outputs": {
@@ -204,6 +287,12 @@
       "Description": "Load balancer target group",
       "Value": {
         "Ref": "TargetGroup"
+      }
+    },
+    "RDSInstance": {
+      "Description": "RDS instance",
+      "Value": {
+          "Ref": "RDSInstance"
       }
     }
   }

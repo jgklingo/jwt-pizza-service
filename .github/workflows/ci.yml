@@ -153,6 +153,7 @@ jobs:
         # this step was erroring until I added "arn:aws:iam::438465170134:role/ecsTaskExecutionRole" to the "PassRolesInTaskDefinition" permission
       
       - name: Deploy new task definition
+        continue-on-error: true  # added this to allow the workflow to complete even if the service is not running
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
