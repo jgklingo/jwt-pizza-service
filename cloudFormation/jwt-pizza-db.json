@@ -1,0 +1,77 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "JWT Pizza DB",
+    "Parameters": {
+        "SecurityGroupID": {
+            "Type": "String",
+            "Description": "RDS security group",
+            "Default": ""
+        },
+        "SubnetIDs": {
+            "Type": "CommaDelimitedList",
+            "Description": "A comma delimited list of VPC network subnets for RDS",
+            "Default": ""
+        },
+        "InstancePassword": {
+            "Type": "String",
+            "Description": "RDS instance master password"
+        },
+        "PrivateHostedZoneID": {
+            "Type": "String",
+            "Description": "Route53 private hosted zone ID for the application",
+            "Default": ""
+        },
+        "DBURL": {
+            "Type": "String",
+            "Description": "URL where the database will be located within the VPC",
+            "Default": ""
+        }
+    },
+    "Resources": {
+        "DBSubnetGroup": {
+            "Type": "AWS::RDS::DBSubnetGroup",
+            "Properties": {
+                "DBSubnetGroupName": "jwt-pizza-db-subnet-group",
+                "DBSubnetGroupDescription": "Subnet group for the jwt-pizza RDS instance",
+                "SubnetIds": {"Ref": "SubnetIDs"}
+            }
+        },
+        "RDSInstance": {
+            "Type": "AWS::RDS::DBInstance",
+            "Properties": {
+                "Engine": "mysql",
+                "DBInstanceIdentifier": "jwt-pizza-service-db",
+                "MasterUsername": "admin",
+                "MasterUserPassword": {"Ref": "InstancePassword"},
+                "DBInstanceClass": "db.t4g.micro",
+                "PubliclyAccessible": "false",
+                "VPCSecurityGroups": [{"Ref": "SecurityGroupID"}],
+                "AvailabilityZone": {"Fn::Select": ["0", {"Fn::GetAZs": {"Ref": "AWS::Region"}}]},
+                "EnableIAMDatabaseAuthentication": "true",
+                "AllocatedStorage": "20",
+                "StorageType": "gp3",
+                "MultiAZ": "false",
+                "EngineLifecycleSupport": "open-source-rds-extended-support-disabled",
+                "StorageEncrypted": "true",
+                "DBSubnetGroupName": {"Ref": "DBSubnetGroup"}
+            }
+        },
+        "DNSRecord": {
+            "DependsOn": "RDSInstance",
+            "Type": "AWS::Route53::RecordSet",
+            "Properties": {
+                "HostedZoneId": {"Ref": "PrivateHostedZoneID"},
+                "Name": {"Ref": "DBURL"},
+                "Type": "CNAME",
+                "TTL": "300",
+                "ResourceRecords": [{"Fn::GetAtt": ["RDSInstance", "Endpoint.Address"]}]
+            }
+        }
+    },
+    "Outputs": {
+        "RDSInstance": {
+            "Description": "RDS instance",
+            "Value": {"Ref": "RDSInstance"}
+        }
+    }
+}
