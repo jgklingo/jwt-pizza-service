@@ -54,7 +54,8 @@
                 "EngineLifecycleSupport": "open-source-rds-extended-support-disabled",
                 "StorageEncrypted": "true",
                 "DBSubnetGroupName": {"Ref": "DBSubnetGroup"}
-            }
+            },
+            "DeletionPolicy": "Delete"
         },
         "DNSRecord": {
             "DependsOn": "RDSInstance",
