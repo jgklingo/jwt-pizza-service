@@ -1,11 +1,14 @@
 const config = require('./config.js');
 const os = require('os');
+const { set } = require('./service.js');
 
 class Metrics {
   constructor() {
     this.methodCounts = {total: 0};
     this.successfulAuthCount = 0;
     this.failedAuthCount = 0;
+    this.activeSessions = new Set();
+    this.userTimeouts = new Map();
 
     // This will periodically sent metrics to Grafana
     const timer = setInterval(() => {
@@ -16,6 +19,7 @@ class Metrics {
       this.sendMetricToGrafana('memory', {}, 'pct', this.getMemoryUsagePercentage());
       this.sendMetricToGrafana('auth_success', {}, 'count', this.successfulAuthCount);
       this.sendMetricToGrafana('auth_failure', {}, 'count', this.failedAuthCount);
+      this.sendMetricToGrafana('active_sessions', {}, 'count', this.activeSessions.size);
     }, 10000);
     timer.unref();
   }
@@ -38,6 +42,20 @@ class Metrics {
         }
         originalSend(body);
       };
+    }
+    next();
+  }
+
+  userTracker = (req, res, next) => {
+    if (req.headers.authorization) {
+      this.activeSessions.add(req.headers.authorization);
+      if (this.userTimeouts.has(req.headers.authorization)) {
+        clearTimeout(this.userTimeouts.get(req.headers.authorization));
+      }
+      this.userTimeouts.set(req.headers.authorization, setTimeout(() => {
+        this.activeSessions.delete(req.headers.authorization);
+        this.userTimeouts.delete(req.headers.authorization);
+      }, 15 * 60 * 1000));
     }
     next();
   }
