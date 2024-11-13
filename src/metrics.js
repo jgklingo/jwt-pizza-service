@@ -9,6 +9,10 @@ class Metrics {
     this.failedAuthCount = 0;
     this.activeSessions = new Set();
     this.userTimeouts = new Map();
+    this.pizzaCount = 0;
+    this.failedOrderCount = 0;
+    this.revenue = 0;
+    this.lastPizzaCreationLatency = 0;
 
     // This will periodically sent metrics to Grafana
     const timer = setInterval(() => {
@@ -20,6 +24,10 @@ class Metrics {
       this.sendMetricToGrafana('auth_success', {}, 'count', this.successfulAuthCount);
       this.sendMetricToGrafana('auth_failure', {}, 'count', this.failedAuthCount);
       this.sendMetricToGrafana('active_sessions', {}, 'count', this.activeSessions.size);
+      this.sendMetricToGrafana('pizza_count', {}, 'count', this.pizzaCount);
+      this.sendMetricToGrafana('failed_orders', {}, 'count', this.failedOrderCount);
+      this.sendMetricToGrafana('revenue', {}, 'count', this.revenue);
+      this.sendMetricToGrafana('last_pizza_creation_latency', {}, 'ms', this.lastPizzaCreationLatency);
     }, 10000);
     timer.unref();
   }
@@ -30,8 +38,8 @@ class Metrics {
     next();
   }
 
-  authTracker = (req, res, next) => {
-    if (req.path.startsWith('/api/auth')) {
+  authOrderTracker = (req, res, next) => {
+    if (req.path.startsWith('/api/auth') && req.method === 'PUT') {
       const originalSend = res.send.bind(res);
 
       res.send = (body) => {
@@ -42,6 +50,24 @@ class Metrics {
         }
         originalSend(body);
       };
+    } else if (req.path.startsWith('/api/order') && req.method === 'POST') {
+      const originalSend = res.send.bind(res);
+      const startTime = Date.now();
+
+      res.send = (body) => {
+        const latency = Date.now() - startTime;
+        this.lastPizzaCreationLatency = latency;
+
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            this.pizzaCount += body.order.items.length;
+            this.revenue += body.order.items.reduce((acc, item) => acc + item.price, 0);
+          } catch (e) {}
+        } else if (res.statusCode >= 400) {
+          this.failedOrderCount++;
+        }
+        originalSend(body);
+      }
     }
     next();
   }
