@@ -4,6 +4,8 @@ const os = require('os');
 class Metrics {
   constructor() {
     this.methodCounts = {total: 0};
+    this.successfulAuthCount = 0;
+    this.failedAuthCount = 0;
 
     // This will periodically sent metrics to Grafana
     const timer = setInterval(() => {
@@ -12,6 +14,8 @@ class Metrics {
       }
       this.sendMetricToGrafana('cpu', {}, 'pct', this.getCpuUsagePercentage());
       this.sendMetricToGrafana('memory', {}, 'pct', this.getMemoryUsagePercentage());
+      this.sendMetricToGrafana('auth_success', {}, 'count', this.successfulAuthCount);
+      this.sendMetricToGrafana('auth_failure', {}, 'count', this.failedAuthCount);
     }, 10000);
     timer.unref();
   }
@@ -19,6 +23,22 @@ class Metrics {
   requestTracker = (req, res, next) => {
     this.methodCounts.total++;
     this.methodCounts[req.method] = this.methodCounts[req.method] ? this.methodCounts[req.method] + 1 : 1;
+    next();
+  }
+
+  authTracker = (req, res, next) => {
+    if (req.path.startsWith('/api/auth')) {
+      const originalSend = res.send.bind(res);
+
+      res.send = (body) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          this.successfulAuthCount++;
+        } else if (res.statusCode >= 400 && res.statusCode < 500) {
+          this.failedAuthCount++;
+        }
+        originalSend(body);
+      };
+    }
     next();
   }
 

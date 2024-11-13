@@ -8,6 +8,7 @@ const metrics = require('./metrics.js');
 
 const app = express();
 app.use(metrics.requestTracker);
+app.use(metrics.authTracker);
 app.use(express.json());
 app.use(setAuthUser);
 app.use((req, res, next) => {
