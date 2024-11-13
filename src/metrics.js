@@ -1,6 +1,5 @@
 const config = require('./config.js');
 const os = require('os');
-const { set } = require('./service.js');
 
 class Metrics {
   constructor() {
@@ -70,7 +69,9 @@ class Metrics {
           try {
             this.pizzaCount += body.order.items.length;
             this.revenue += body.order.items.reduce((acc, item) => acc + item.price, 0);
-          } catch (e) {}
+          } catch {
+            0;
+          }
         } else if (res.statusCode >= 400) {
           this.failedOrderCount++;
         }
