@@ -3,16 +3,22 @@ const os = require('os');
 
 class Metrics {
   constructor() {
+    this.methodCounts = {total: 0};
+
     // This will periodically sent metrics to Grafana
     const timer = setInterval(() => {
+      for (const type in this.methodCounts) {
+        this.sendMetricToGrafana('requests', {method: type}, 'count', this.methodCounts[type]);
+      }
       this.sendMetricToGrafana('cpu', {}, 'pct', this.getCpuUsagePercentage());
       this.sendMetricToGrafana('memory', {}, 'pct', this.getMemoryUsagePercentage());
     }, 10000);
     timer.unref();
   }
 
-  requestTracker(req, res, next) {
-    pass;
+  requestTracker = (req, res, next) => {
+    this.methodCounts.total++;
+    this.methodCounts[req.method] = this.methodCounts[req.method] ? this.methodCounts[req.method] + 1 : 1;
     next();
   }
 
