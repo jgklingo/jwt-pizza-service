@@ -13,6 +13,7 @@ class Metrics {
     this.failedOrderCount = 0;
     this.revenue = 0;
     this.lastPizzaCreationLatency = 0;
+    this.lastRequestLatency = 0;
 
     // This will periodically sent metrics to Grafana
     const timer = setInterval(() => {
@@ -28,11 +29,18 @@ class Metrics {
       this.sendMetricToGrafana('failed_orders', {}, 'count', this.failedOrderCount);
       this.sendMetricToGrafana('revenue', {}, 'count', this.revenue);
       this.sendMetricToGrafana('last_pizza_creation_latency', {}, 'ms', this.lastPizzaCreationLatency);
+      this.sendMetricToGrafana('last_request_latency', {}, 'ms', this.lastRequestLatency);
     }, 10000);
     timer.unref();
   }
 
   requestTracker = (req, res, next) => {
+    const startTime = Date.now();
+    res.on('finish', () => {
+      const latency = Date.now() - startTime;
+      this.lastRequestLatency = latency;
+    });
+
     this.methodCounts.total++;
     this.methodCounts[req.method] = this.methodCounts[req.method] ? this.methodCounts[req.method] + 1 : 1;
     next();
@@ -111,8 +119,6 @@ class Metrics {
       .then((response) => {
         if (!response.ok) {
           console.error('Failed to push metrics data to Grafana');
-        } else {
-          console.log(`Pushed ${metric}`);
         }
       })
       .catch((error) => {
